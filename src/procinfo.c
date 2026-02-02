@@ -2,6 +2,7 @@
 #include <ctype.h> //char checker functions
 #include <stdio.h> //file-related functions
 #include <unistd.h>
+
 static void usage(const char *a){
   fprintf(stderr, "Usage: %s <pid>\n", a); 
   exit(1);
@@ -42,6 +43,7 @@ int main(int c, char**v){
   }
   char statname[50] = "/proc/";
   strcat(statname, v[1]);
+  //set up and check file pointer
   FILE *file_pointer_stat = fopen(strcat(statname, "/status"), "r");
   if(!file_pointer_stat){
     switch errno {
@@ -63,7 +65,7 @@ int main(int c, char**v){
   char cpuname[50] = "/proc/";
   strcat(cpuname, v[1]);
   FILE *file_pointer_cpu = fopen(strcat(cpuname, "/stat"), "r");
-  
+  //get stats
   fnextline(file_pointer_stat);
   fnextline(file_pointer_stat);
   printf("%s", fgets(result, 100, file_pointer_stat));
@@ -71,32 +73,60 @@ int main(int c, char**v){
   fnextline(file_pointer_stat);
   fnextline(file_pointer_stat);
   printf("%s", fgets(result, 100, file_pointer_stat));
-  printf("%s\n", fgets(result, 100, file_pointer_cmd));
+  printf("command line: %s\n", fgets(result, 100, file_pointer_cmd));
   for (int i=0; i<15; i++){
     fnextline(file_pointer_stat);
   }
   printf("%s", fgets(result, 100, file_pointer_stat));
-  for (int i=0; i<15; i++){
+  for (int i=0; i<13; i++){
     fnextitem(file_pointer_cpu);
   }
+  int total = 0;
   char curchar = '\0';
-  char usertime[20] = "";
-  printf("cpu time (user): ");
-  while (curchar != ' '){
-    printf("%c", curchar = fgetc(file_pointer_cpu));
-    //strcat(usertime, curchar);
+  int charcount = 0;
+  int numhold = 0;
+  int multiplier = 1;
+  //get ustat
+  while (curchar != ' '){ //count chars
+    curchar = fgetc(file_pointer_cpu);
+    charcount++;
   }
-  printf("\n");
+  fseek(file_pointer_cpu, -charcount, SEEK_CUR);
+  charcount -= 2;
   curchar = '\0';
-  char systemtime[20] = "";
-  printf("cpu time (system): ");
-  while (curchar != ' '){
-    printf("%c", curchar = fgetc(file_pointer_cpu));
-    //strcat(systemtime, curchar);
+  while (curchar != ' '){ //multiply input
+    curchar = fgetc(file_pointer_cpu);
+    multiplier = 1;
+    for(int i=1; i<=charcount; i++){
+      multiplier *= 10;
+    }
+    numhold += (((int)curchar) - 48) * multiplier;
+    charcount--;
   }
-  printf("\n");
-
-  
+  total += numhold + 16;
+  curchar = '\0';
+  charcount = 0;
+  numhold = 0;
+  multiplier = 1;
+  //get sstat
+  while (curchar != ' '){ 
+    curchar = fgetc(file_pointer_cpu);
+    charcount++;
+  }
+  fseek(file_pointer_cpu, -charcount, SEEK_CUR);
+  charcount -= 2;
+  curchar = '\0';
+  while (curchar != ' '){ //multiply input
+    curchar = fgetc(file_pointer_cpu);
+    multiplier = 1;
+    for(int i=1; i<=charcount; i++){
+      multiplier *= 10;
+    }
+    numhold += (((int)curchar) - 48) * multiplier;
+    charcount--;
+  }
+  total += numhold + 16;
+  printf("cpu time (user+system): %d\n", total);
   
   fclose(file_pointer_stat);
   fclose(file_pointer_cmd);
