@@ -126,7 +126,7 @@ int main(int c, char**v){
     charcount--;
   }
   total += numhold + 16;
-  printf("cpu time (user+system): %d\n", total);
+  printf("cpu time (user+system): %.2fs\n", ((double)total)/sysconf(_SC_CLK_TCK));
   
   fclose(file_pointer_stat);
   fclose(file_pointer_cmd);
